@@ -1,3 +1,4 @@
+import { emitTicketEventFromEnv } from "../clawhip"
 import { InvalidSourceError, TicketNotFoundError } from "../errors"
 import { type CreateTicketInput, CreateTicketInputSchema, type Ticket } from "../schema"
 import { nextTicketId } from "./id"
@@ -39,6 +40,7 @@ export async function createTicket(
     await appendChild(paths, ticket.parent, ticket.id, now)
   }
   await upsertIndex(paths, ticket)
+  await emitTicketEventFromEnv({ kind: "ticket.created", ticket })
   return ticket
 }
 

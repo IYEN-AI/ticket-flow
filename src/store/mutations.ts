@@ -1,3 +1,4 @@
+import { emitTicketEventFromEnv } from "../clawhip"
 import {
   type AddLogInput,
   AddLogInputSchema,
@@ -68,6 +69,13 @@ export async function checkpointTicket(
   }
   await writeTicket(paths, nextTicket)
   await upsertIndex(paths, nextTicket)
+  await emitTicketEventFromEnv({ kind: "ticket.checkpointed", ticket: nextTicket })
+  if (nextAction?.type === "agent_action") {
+    await emitTicketEventFromEnv({ kind: "ticket.agent_action_available", ticket: nextTicket })
+  }
+  if (nextAction?.type === "blocked" || nextTicket.current?.blocker !== undefined) {
+    await emitTicketEventFromEnv({ kind: "ticket.blocked", ticket: nextTicket })
+  }
   return nextTicket
 }
 
@@ -82,9 +90,9 @@ function nextActionFromCheckpoint(input: CheckpointInput): TicketNextAction {
     return undefined
   }
   return {
-    ...(input.nextType === undefined ? {} : { type: input.nextType }),
-    ...optionalText("command", input.nextCommand),
-    ...optionalText("owner", input.nextOwner),
+    type: input.nextType,
+    command: resolveOptionalText(input.nextCommand),
+    owner: resolveOptionalText(input.nextOwner),
   }
 }
 
@@ -105,19 +113,16 @@ function checkpointCurrentPayload(
   input: CheckpointInput,
 ): NonNullable<Ticket["current"]> {
   return {
-    ...optionalText("phase", input.phase),
-    ...optionalText("decision", input.decision),
-    ...optionalText("evidence", input.evidence),
-    ...optionalText("blocker", input.blocker),
-    ...optionalText("next", input.next),
-    ...optionalText("note", input.note),
+    phase: resolveOptionalText(input.phase),
+    decision: resolveOptionalText(input.decision),
+    evidence: resolveOptionalText(input.evidence),
+    blocker: resolveOptionalText(input.blocker),
+    next: resolveOptionalText(input.next),
+    note: resolveOptionalText(input.note),
     ...(nextAction === undefined ? {} : { next_action: nextAction }),
   }
 }
 
-function optionalText<K extends string>(
-  key: K,
-  value: string | undefined,
-): Record<K, string> | object {
-  return value === undefined || value.length === 0 ? {} : { [key]: value }
+function resolveOptionalText(value: string | undefined): string | undefined {
+  return value === undefined || value.length === 0 ? undefined : value
 }
