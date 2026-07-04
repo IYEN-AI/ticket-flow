@@ -9,10 +9,14 @@ type CliRun = {
   readonly exitCode: number
 }
 
-async function runCli(args: readonly string[], storeRoot: string): Promise<CliRun> {
+async function runCli(
+  args: readonly string[],
+  storeRoot: string,
+  env: Record<string, string> = {},
+): Promise<CliRun> {
   const process = Bun.spawn(["bun", "run", "src/cli.ts", ...args], {
     cwd: import.meta.dir.replace(/\/tests$/, ""),
-    env: { ...Bun.env, OPENCLAW_TICKET_HOME: storeRoot },
+    env: { ...Bun.env, ...env, OPENCLAW_TICKET_HOME: storeRoot },
     stdout: "pipe",
     stderr: "pipe",
   })
@@ -108,5 +112,43 @@ describe("CLI compatibility", () => {
 
     expect(result.exitCode).toBe(1)
     expect(result.stderr).toContain("checkpoint requires at least one field")
+  })
+
+  test("Given an existing ticket When clawhip event prints ticket.created Then it returns routeable JSON", async () => {
+    const create = await runCli(
+      ["create", "--title", "Print clawhip event", "--assignee", "codex"],
+      storeRoot,
+    )
+    const id = create.stdout.trim()
+
+    const result = await runCli(
+      ["clawhip", "event", id, "--kind", "ticket.created", "--print"],
+      storeRoot,
+      { TICKET_FLOW_REPO_PATH: "/repo/ticket-flow" },
+    )
+
+    expect(result.exitCode).toBe(0)
+    expect(result.stderr).toBe("")
+    expect(JSON.parse(result.stdout)).toMatchObject({
+      type: "ticket.created",
+      payload: {
+        provider: "ticket-flow",
+        ticket_id: id,
+        repo_path: "/repo/ticket-flow",
+      },
+    })
+  })
+
+  test("Given an unsupported clawhip event kind When printing Then the CLI rejects it", async () => {
+    const create = await runCli(["create", "--title", "Reject clawhip event"], storeRoot)
+    const id = create.stdout.trim()
+
+    const result = await runCli(
+      ["clawhip", "event", id, "--kind", "ticket.done", "--print"],
+      storeRoot,
+    )
+
+    expect(result.exitCode).toBe(1)
+    expect(result.stderr).toContain("Invalid option")
   })
 })

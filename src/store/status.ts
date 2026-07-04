@@ -1,5 +1,6 @@
 import { mkdir, rm } from "node:fs/promises"
 import { dirname, join } from "node:path"
+import { emitTicketEventFromEnv } from "../clawhip"
 import { InvalidTransitionError, ReviewArtifactRequiredError } from "../errors"
 import { type StatusInput, StatusInputSchema, type Ticket, type TicketStatus } from "../schema"
 import { readActiveTicket, removeIndex, upsertIndex, writeJson, writeTicket } from "./io"
@@ -53,6 +54,12 @@ export async function updateStatus(
     await upsertIndex(paths, nextTicket)
   }
 
+  await emitTicketEventFromEnv({
+    kind: "ticket.status_changed",
+    ticket: nextTicket,
+    fromStatus: oldStatus,
+    toStatus: input.status,
+  })
   return { id: ticket.id, oldStatus, newStatus: input.status }
 }
 

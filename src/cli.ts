@@ -1,8 +1,10 @@
 #!/usr/bin/env bun
 import { Command } from "commander"
+import { buildClawhipEvent, ClawhipEventKindSchema, sendClawhipEvent } from "./clawhip"
 import {
   type AgentActionsOptions,
   type CheckpointOptions,
+  type ClawhipEventOptions,
   type CreateOptions,
   collect,
   collectTags,
@@ -176,6 +178,44 @@ program
         console.log(
           `${action.id} [${action.status}] owner=${action.owner}${age} :: ${action.command}`,
         )
+      }
+    })
+  })
+
+const clawhip = program.command("clawhip").description("clawhip integration helpers")
+
+clawhip
+  .command("event")
+  .argument("<id>")
+  .requiredOption("--kind <kind>")
+  .option("--print", "print the clawhip IncomingEvent JSON")
+  .option("--send", "send the event to the clawhip daemon")
+  .option("--url <url>", "clawhip daemon base URL", "http://127.0.0.1:25294")
+  .option("--timeout-ms <timeoutMs>", "clawhip send timeout in milliseconds", "1000")
+  .action(async (id: string, options: ClawhipEventOptions) => {
+    await runBoundary(async () => {
+      const ticket = await getTicket(id)
+      const kind = ClawhipEventKindSchema.parse(options.kind)
+      const event = buildClawhipEvent({
+        kind,
+        ticket,
+        repoPath: Bun.env["TICKET_FLOW_REPO_PATH"] ?? process.cwd(),
+        worktreePath: Bun.env["TICKET_FLOW_WORKTREE_PATH"],
+      })
+      if (options.print === true || options.send !== true) {
+        console.log(JSON.stringify(event, null, 2))
+      }
+      if (options.send === true) {
+        const result = await sendClawhipEvent({
+          url: options.url,
+          event,
+          mode: "strict",
+          timeoutMs: Number.parseInt(options.timeoutMs ?? "1000", 10),
+        })
+        if (!result.ok) {
+          throw new Error(result.error)
+        }
+        console.error(`clawhip: sent ${event.type} status=${result.status}`)
       }
     })
   })

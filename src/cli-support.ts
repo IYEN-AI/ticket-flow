@@ -46,6 +46,14 @@ export type AgentActionsOptions = {
   readonly staleMinutes?: string
 }
 
+export type ClawhipEventOptions = {
+  readonly kind: string
+  readonly print?: boolean
+  readonly send?: boolean
+  readonly url?: string
+  readonly timeoutMs?: string
+}
+
 export function collect(value: string, previous: readonly string[]): readonly string[] {
   return [...previous, value]
 }

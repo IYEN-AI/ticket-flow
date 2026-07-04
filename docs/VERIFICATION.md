@@ -11,8 +11,8 @@ bun run lint
 Latest result:
 
 - TypeScript: passed
-- Tests: 6 passed, 0 failed
-- Biome: passed over 20 files
+- Tests: 16 passed, 0 failed
+- Biome: passed over 25 files
 
 ## Manual CLI QA
 
@@ -110,3 +110,33 @@ OPENCLAW_TICKET_HOME=/tmp/ticket-flow-empty-checkpoint bun run src/cli.ts checkp
 ```
 
 Observed: command exited 1 with `checkpoint requires at least one field`, matching the existing shell guardrail.
+
+## Manual Clawhip QA
+
+The `clawhip` integration was verified against a real `clawhip v0.6.11` daemon
+using a `ticket.*` localfile route.
+
+Commands exercised:
+
+```bash
+TICKET_FLOW_REPO_PATH="$PWD" bun run cli clawhip event T-20260704-001 --kind ticket.created --print
+TICKET_FLOW_REPO_PATH="$PWD" bun run cli clawhip event T-20260704-001 --kind ticket.created --send --url http://127.0.0.1:25343
+TICKET_FLOW_CLAWHIP=1 TICKET_FLOW_CLAWHIP_URL=http://127.0.0.1:25343 TICKET_FLOW_REPO_PATH="$PWD" bun run cli create --title "Auto emit to clawhip"
+```
+
+Observed:
+
+- manual projection printed routeable `ticket.created` IncomingEvent JSON
+- manual send returned `clawhip: sent ticket.created status=202`
+- automatic create appended `ticket.created` JSON to the configured localfile sink
+- payloads contained route fields such as `provider`, `ticket_id`, `repo_path`,
+  and `repo_name`
+- payloads did not include raw ticket logs, artifacts, goals, or acceptance text
+
+Evidence:
+
+```text
+.omo/ulw-implementation/20260704-clawhip-integration/evidence/real-surface/REAL-SURFACE-QA.md
+.omo/ulw-implementation/20260704-clawhip-integration/evidence/real-surface/cli-print.json
+.omo/ulw-implementation/20260704-clawhip-integration/evidence/real-surface/localfile.jsonl
+```
