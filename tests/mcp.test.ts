@@ -16,7 +16,7 @@ async function runMcp(
 ): Promise<readonly JsonRpcResponse[]> {
   const process = Bun.spawn(["bun", "run", "src/mcp.ts"], {
     cwd: import.meta.dir.replace(/\/tests$/, ""),
-    env: { ...Bun.env, OPENCLAW_TICKET_HOME: storeRoot },
+    env: { ...Bun.env, TICKET_FLOW_HOME: storeRoot },
     stdin: "pipe",
     stdout: "pipe",
     stderr: "pipe",

@@ -3,6 +3,7 @@ import { mkdir, mkdtemp, readFile, rm, stat, writeFile } from "node:fs/promises"
 import { tmpdir } from "node:os"
 import { join } from "node:path"
 import { getTicket, listTickets, updateStatus } from "../src/store"
+import { resolveStorePaths } from "../src/store/paths"
 
 describe("historical ticket contract", () => {
   let storeRoot = ""
@@ -15,6 +16,8 @@ describe("historical ticket contract", () => {
   })
 
   afterEach(async () => {
+    delete Bun.env["TICKET_FLOW_HOME"]
+    delete Bun.env["OPENCLAW_TICKET_HOME"]
     await rm(storeRoot, { recursive: true, force: true })
   })
 
@@ -113,6 +116,26 @@ describe("historical ticket contract", () => {
     expect(activeExists).toBe(false)
     expect(archiveExists).toBe(true)
     expect(index.tickets["T-20260701-001"]).toBeUndefined()
+  })
+
+  test("Given both ticket home env vars When resolving store paths Then ticket-flow home wins", () => {
+    Bun.env["TICKET_FLOW_HOME"] = "/tmp/ticket-flow-home"
+    Bun.env["OPENCLAW_TICKET_HOME"] = "/tmp/openclaw-home"
+
+    const paths = resolveStorePaths()
+
+    expect(paths.root).toBe("/tmp/ticket-flow-home")
+    expect(paths.active).toBe("/tmp/ticket-flow-home/active")
+  })
+
+  test("Given only the legacy ticket home env When resolving store paths Then it remains compatible", () => {
+    delete Bun.env["TICKET_FLOW_HOME"]
+    Bun.env["OPENCLAW_TICKET_HOME"] = "/tmp/openclaw-home"
+
+    const paths = resolveStorePaths()
+
+    expect(paths.root).toBe("/tmp/openclaw-home")
+    expect(paths.active).toBe("/tmp/openclaw-home/active")
   })
 })
 

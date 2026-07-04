@@ -11,7 +11,7 @@ bun run lint
 Latest result:
 
 - TypeScript: passed
-- Tests: 16 passed, 0 failed
+- Tests: 18 passed, 0 failed
 - Biome: passed over 25 files
 
 ## Manual CLI QA
@@ -25,12 +25,12 @@ Store:
 Commands exercised:
 
 ```bash
-OPENCLAW_TICKET_HOME=/tmp/ticket-flow-qa bun run src/cli.ts create --title 'QA ticket' --type feature --priority high --goal 'prove CLI surface' --acceptance 'ticket json exists' --tag qa,mcp --source discord:999
-OPENCLAW_TICKET_HOME=/tmp/ticket-flow-qa bun run src/cli.ts status T-20260701-001 doing --note 'start QA'
-OPENCLAW_TICKET_HOME=/tmp/ticket-flow-qa bun run src/cli.ts link T-20260701-001 --thread 123456
-OPENCLAW_TICKET_HOME=/tmp/ticket-flow-qa bun run src/cli.ts log T-20260701-001 'manual QA note'
-OPENCLAW_TICKET_HOME=/tmp/ticket-flow-qa bun run src/cli.ts checkpoint T-20260701-001 --phase qa --next-type agent_action --next-command 'finish verification' --next-owner iyen --note 'handoff packet'
-OPENCLAW_TICKET_HOME=/tmp/ticket-flow-qa bun run src/cli.ts agent-actions
+TICKET_FLOW_HOME=/tmp/ticket-flow-qa bun run src/cli.ts create --title 'QA ticket' --type feature --priority high --goal 'prove CLI surface' --acceptance 'ticket json exists' --tag qa,mcp --source discord:999
+TICKET_FLOW_HOME=/tmp/ticket-flow-qa bun run src/cli.ts status T-20260701-001 doing --note 'start QA'
+TICKET_FLOW_HOME=/tmp/ticket-flow-qa bun run src/cli.ts link T-20260701-001 --thread 123456
+TICKET_FLOW_HOME=/tmp/ticket-flow-qa bun run src/cli.ts log T-20260701-001 'manual QA note'
+TICKET_FLOW_HOME=/tmp/ticket-flow-qa bun run src/cli.ts checkpoint T-20260701-001 --phase qa --next-type agent_action --next-command 'finish verification' --next-owner iyen --note 'handoff packet'
+TICKET_FLOW_HOME=/tmp/ticket-flow-qa bun run src/cli.ts agent-actions
 ```
 
 Observed output included:
@@ -53,7 +53,7 @@ printf '%s\n' \
   '{"jsonrpc":"2.0","method":"notifications/initialized"}' \
   '{"jsonrpc":"2.0","id":2,"method":"tools/list"}' \
   '{"jsonrpc":"2.0","id":3,"method":"tools/call","params":{"name":"ticket_create","arguments":{"title":"MCP QA ticket","priority":"low","type":"chore","source":"qa:mcp"}}}' \
-  | OPENCLAW_TICKET_HOME=/tmp/ticket-flow-mcp-qa bun run src/mcp.ts
+  | TICKET_FLOW_HOME=/tmp/ticket-flow-mcp-qa bun run src/mcp.ts
 ```
 
 Observed:
@@ -69,7 +69,7 @@ Observed:
 The existing shell CLI accepts both `--source type:ref` and `--source type ref`. The new CLI was checked with the split form:
 
 ```bash
-OPENCLAW_TICKET_HOME=/tmp/ticket-flow-source-qa bun run src/cli.ts create --title 'source split' --source discord 777
+TICKET_FLOW_HOME=/tmp/ticket-flow-source-qa bun run src/cli.ts create --title 'source split' --source discord 777
 ```
 
 Observed JSON:
@@ -98,7 +98,7 @@ Observed:
 Default-store read-only list:
 
 ```bash
-OPENCLAW_TICKET_HOME=/Users/iyen/.openclaw/tickets bun run src/cli.ts list | head -20
+TICKET_FLOW_HOME=/Users/iyen/.openclaw/tickets bun run src/cli.ts list | head -20
 ```
 
 Observed: command exited 0 and printed active tickets from the real store.
@@ -106,10 +106,16 @@ Observed: command exited 0 and printed active tickets from the real store.
 Empty checkpoint compatibility:
 
 ```bash
-OPENCLAW_TICKET_HOME=/tmp/ticket-flow-empty-checkpoint bun run src/cli.ts checkpoint T-20260701-001
+TICKET_FLOW_HOME=/tmp/ticket-flow-empty-checkpoint bun run src/cli.ts checkpoint T-20260701-001
 ```
 
 Observed: command exited 1 with `checkpoint requires at least one field`, matching the existing shell guardrail.
+
+Store override compatibility:
+
+- `TICKET_FLOW_HOME` is the preferred store override.
+- `OPENCLAW_TICKET_HOME` remains supported as a legacy compatibility alias.
+- When both are set, `TICKET_FLOW_HOME` wins.
 
 ## Manual Clawhip QA
 

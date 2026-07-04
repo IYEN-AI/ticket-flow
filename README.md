@@ -1,15 +1,17 @@
 # ticket-flow
 
-Standalone OpenClaw ticket CLI and MCP server.
+Agent-oriented local ticket system with CLI, MCP, and event-routing adapters.
 
-This repository intentionally preserves the existing OpenClaw ticket JSON contract:
+The storage layer intentionally preserves the existing OpenClaw-compatible
+ticket JSON contract for migration and interoperability:
 
 - store root defaults to `~/.openclaw/tickets`
 - active tickets live in `active/T-YYYYMMDD-NNN.json`
 - closed tickets move to `archive/YYYY-MM/T-YYYYMMDD-NNN.json`
 - `index.json` tracks active tickets by ID
 
-The service boundary is the TypeScript domain and store layer. The CLI and MCP server are adapters on top of the same behavior.
+The service boundary is the TypeScript domain and store layer. The CLI, MCP
+server, and `clawhip` event projection are adapters on top of the same behavior.
 
 ## Usage
 
@@ -20,7 +22,8 @@ bun run cli list
 bun run mcp
 ```
 
-Override the store path with `OPENCLAW_TICKET_HOME=/path/to/tickets`.
+Override the store path with `TICKET_FLOW_HOME=/path/to/tickets`.
+`OPENCLAW_TICKET_HOME` is still supported as a backward-compatible alias.
 
 ## Clawhip integration
 

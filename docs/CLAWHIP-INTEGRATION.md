@@ -2,8 +2,10 @@
 
 `ticket-flow` can emit compact `ticket.*` events to a running
 [`clawhip`](https://github.com/Yeachan-Heo/clawhip) daemon. The integration keeps
-the local OpenClaw ticket JSON contract as the source of truth and uses
-`clawhip` only as the event routing layer.
+the local ticket JSON store as the source of truth and uses `clawhip` only as
+the event routing layer.
+`OpenClaw` here describes the compatible file format, not an exclusive product
+boundary; the runtime model is an agent-oriented ticket system.
 
 ## Responsibilities
 
@@ -67,7 +69,7 @@ Common payload fields:
 | --- | --- |
 | `provider` | Always `ticket-flow`; useful for route filters. |
 | `event` | Same value as the top-level `type`. |
-| `ticket_id` | OpenClaw-style ticket ID. |
+| `ticket_id` | `ticket-flow` ticket ID in the compatible `T-YYYYMMDD-NNN` format. |
 | `title` | Ticket title. |
 | `status` | Current ticket status. |
 | `priority`, `type`, `assignee` | Present when the ticket has those values. |
