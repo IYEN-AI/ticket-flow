@@ -29,7 +29,7 @@ import {
 
 const program = new Command()
 
-program.name("ticket-flow").description("OpenClaw-compatible ticket CLI").version("0.1.0")
+program.name("ticket-flow").description("Agent-oriented local ticket CLI").version("0.1.0")
 
 program
   .command("create")

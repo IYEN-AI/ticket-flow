@@ -24,7 +24,7 @@ const server = new McpServer({ name: "ticket-flow", version: "0.1.0" })
 server.registerTool(
   "ticket_create",
   {
-    description: "Create an OpenClaw-compatible ticket in the configured local ticket store.",
+    description: "Create an agent ticket in the configured local ticket store.",
     inputSchema: {
       title: z.string().min(1),
       type: z.string().min(1).default("chore"),
@@ -48,7 +48,7 @@ server.registerTool(
 server.registerTool(
   "ticket_list",
   {
-    description: "List active OpenClaw tickets from active JSON files.",
+    description: "List active agent tickets from active JSON files.",
     inputSchema: { status: TicketStatusSchema.optional() },
   },
   async ({ status }) => {
@@ -62,7 +62,7 @@ server.registerTool(
 server.registerTool(
   "ticket_get",
   {
-    description: "Read an active or archived OpenClaw ticket by ID.",
+    description: "Read an active or archived agent ticket by ID.",
     inputSchema: { id: z.string().regex(/^T-\d{8}-\d{3}$/) },
   },
   async ({ id }) => {
@@ -76,7 +76,7 @@ server.registerTool(
 server.registerTool(
   "ticket_update_status",
   {
-    description: "Apply the existing OpenClaw ticket status transition rules.",
+    description: "Apply the ticket status transition rules.",
     inputSchema: {
       id: z.string().regex(/^T-\d{8}-\d{3}$/),
       status: TicketStatusSchema,
@@ -131,7 +131,7 @@ server.registerTool(
 server.registerTool(
   "ticket_checkpoint",
   {
-    description: "Write the existing OpenClaw checkpoint/current payload to an active ticket.",
+    description: "Write the checkpoint/current handoff payload to an active ticket.",
     inputSchema: {
       id: z.string().regex(/^T-\d{8}-\d{3}$/),
       phase: z.string().optional(),
@@ -171,7 +171,7 @@ server.registerResource(
   "active-tickets",
   "tickets://active",
   {
-    title: "Active OpenClaw tickets",
+    title: "Active agent tickets",
     description: "All active tickets as JSON.",
     mimeType: "application/json",
   },

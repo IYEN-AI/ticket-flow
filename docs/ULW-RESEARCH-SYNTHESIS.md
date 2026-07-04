@@ -4,9 +4,17 @@ Date: 2026-07-01
 
 ## Executive Summary
 
-The service should preserve the existing OpenClaw ticket contract rather than introduce a new issue model. The current contract is file-backed JSON under `~/.openclaw/tickets`, with active tickets in `active/`, closed tickets moved to `archive/YYYY-MM/`, and `index.json` used as the active-ticket index.
+The service is an agent-oriented local ticket system. It should preserve the
+existing OpenClaw-compatible ticket contract rather than introduce a new issue
+model immediately. The current contract is file-backed JSON under
+`~/.openclaw/tickets`, with active tickets in `active/`, closed tickets moved to
+`archive/YYYY-MM/`, and `index.json` used as the active-ticket index.
 
-The first implementation therefore keeps local JSON as the source of truth and adds two adapters over the same domain layer: a CLI and an MCP stdio server. This follows the local-first durability pattern from tools such as Taskwarrior and todo.txt while avoiding a disruptive SQLite/workflow migration.
+The first implementation therefore keeps local JSON as the source of truth and
+adds adapters over the same domain layer: a CLI, an MCP stdio server, and event
+projection for `clawhip`. This follows the local-first durability pattern from
+tools such as Taskwarrior and todo.txt while avoiding a disruptive
+SQLite/workflow migration.
 
 ## Research Findings
 
@@ -56,5 +64,7 @@ The first implementation therefore keeps local JSON as the source of truth and a
 
 ## Gaps
 
-- This repo does not yet replace Discord `clawhip` publishing or thread bootstrapping. Those were side effects in the old script and should remain outside the core local ticket contract unless explicitly productized.
+- This repo does not make `clawhip` publishing or thread bootstrapping part of
+  the core ticket contract. Those stay in the adapter/integration layer unless
+  explicitly productized.
 - This repo does not introduce SQLite, UUIDs, configurable workflows, WIP limits, or sync. Research supports them as future options, but they would be new contracts.

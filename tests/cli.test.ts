@@ -16,7 +16,7 @@ async function runCli(
 ): Promise<CliRun> {
   const process = Bun.spawn(["bun", "run", "src/cli.ts", ...args], {
     cwd: import.meta.dir.replace(/\/tests$/, ""),
-    env: { ...Bun.env, ...env, OPENCLAW_TICKET_HOME: storeRoot },
+    env: { ...Bun.env, ...env, TICKET_FLOW_HOME: storeRoot },
     stdout: "pipe",
     stderr: "pipe",
   })
@@ -41,7 +41,7 @@ describe("CLI compatibility", () => {
     await rm(storeRoot, { recursive: true, force: true })
   })
 
-  test("Given an empty OpenClaw ticket store When create runs Then it writes the existing JSON and index contract", async () => {
+  test("Given an empty ticket store When create runs Then it writes the existing JSON and index contract", async () => {
     const result = await runCli(
       [
         "create",
