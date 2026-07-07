@@ -2,10 +2,10 @@
 
 Agent-oriented local ticket system with CLI, MCP, and event-routing adapters.
 
-The storage layer intentionally preserves the existing OpenClaw-compatible
-ticket JSON contract for migration and interoperability:
+The storage layer uses a local ticket JSON contract designed for agent
+workflows:
 
-- store root defaults to `~/.openclaw/tickets`
+- store root defaults to `~/.ticket-flow/tickets`
 - active tickets live in `active/T-YYYYMMDD-NNN.json`
 - closed tickets move to `archive/YYYY-MM/T-YYYYMMDD-NNN.json`
 - `index.json` tracks active tickets by ID
@@ -23,7 +23,6 @@ bun run mcp
 ```
 
 Override the store path with `TICKET_FLOW_HOME=/path/to/tickets`.
-`OPENCLAW_TICKET_HOME` is still supported as a backward-compatible alias.
 
 ## Clawhip integration
 

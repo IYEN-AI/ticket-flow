@@ -4,11 +4,11 @@ Date: 2026-07-01
 
 ## Executive Summary
 
-The service is an agent-oriented local ticket system. It should preserve the
-existing OpenClaw-compatible ticket contract rather than introduce a new issue
-model immediately. The current contract is file-backed JSON under
-`~/.openclaw/tickets`, with active tickets in `active/`, closed tickets moved to
-`archive/YYYY-MM/`, and `index.json` used as the active-ticket index.
+The service is an agent-oriented local ticket system. It should preserve a
+simple local ticket contract rather than introduce a remote issue model
+immediately. The current contract is file-backed JSON under
+`~/.ticket-flow/tickets`, with active tickets in `active/`, closed tickets moved
+to `archive/YYYY-MM/`, and `index.json` used as the active-ticket index.
 
 The first implementation therefore keeps local JSON as the source of truth and
 adds adapters over the same domain layer: a CLI, an MCP stdio server, and event
@@ -18,7 +18,9 @@ SQLite/workflow migration.
 
 ## Research Findings
 
-1. Existing OpenClaw tickets are heterogeneous. The write contract is the current `ticket.sh`, but the read contract must tolerate older records with optional `current`, nullable or expanded `source`, and older log shapes.
+1. Existing local tickets are heterogeneous. The read contract must tolerate
+   older records with optional `current`, nullable or expanded `source`, and
+   older log shapes.
 
 2. MCP stdio servers must keep stdout clean. The MCP transport uses stdin/stdout as JSON-RPC and reserves stderr for logs. This implementation avoids application logging in `src/mcp.ts` and verifies stdio with a JSON-RPC transcript.
 
@@ -49,7 +51,7 @@ SQLite/workflow migration.
 
 ## Sources
 
-- Current OpenClaw CLI: `/Users/iyen/.openclaw/tickets/ticket.sh`
+- Prior local ticket shell workflow
 - MCP TypeScript SDK: https://github.com/modelcontextprotocol/typescript-sdk
 - MCP specification: https://modelcontextprotocol.io/specification/2025-06-18
 - Agile Manifesto: https://agilemanifesto.org/
