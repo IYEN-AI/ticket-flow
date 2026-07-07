@@ -118,7 +118,7 @@ describe("historical ticket contract", () => {
     expect(index.tickets["T-20260701-001"]).toBeUndefined()
   })
 
-  test("Given both ticket home env vars When resolving store paths Then ticket-flow home wins", () => {
+  test("Given ticket-flow home env When resolving store paths Then it uses the native override", () => {
     Bun.env["TICKET_FLOW_HOME"] = "/tmp/ticket-flow-home"
     Bun.env["OPENCLAW_TICKET_HOME"] = "/tmp/openclaw-home"
 
@@ -128,14 +128,24 @@ describe("historical ticket contract", () => {
     expect(paths.active).toBe("/tmp/ticket-flow-home/active")
   })
 
-  test("Given only the legacy ticket home env When resolving store paths Then it remains compatible", () => {
+  test("Given only the old openclaw home env When resolving store paths Then it is ignored", () => {
     delete Bun.env["TICKET_FLOW_HOME"]
     Bun.env["OPENCLAW_TICKET_HOME"] = "/tmp/openclaw-home"
 
     const paths = resolveStorePaths()
 
-    expect(paths.root).toBe("/tmp/openclaw-home")
-    expect(paths.active).toBe("/tmp/openclaw-home/active")
+    expect(paths.root).not.toBe("/tmp/openclaw-home")
+    expect(paths.active).not.toBe("/tmp/openclaw-home/active")
+  })
+
+  test("Given no ticket-flow home env When resolving store paths Then it uses the native default", () => {
+    delete Bun.env["TICKET_FLOW_HOME"]
+    delete Bun.env["OPENCLAW_TICKET_HOME"]
+
+    const paths = resolveStorePaths()
+
+    expect(paths.root).toEndWith("/.ticket-flow/tickets")
+    expect(paths.active).toEndWith("/.ticket-flow/tickets/active")
   })
 })
 

@@ -10,10 +10,8 @@ export type TicketStorePaths = {
   readonly index: string
 }
 
-export function resolveStorePaths(
-  root = Bun.env["TICKET_FLOW_HOME"] ?? Bun.env["OPENCLAW_TICKET_HOME"],
-): TicketStorePaths {
-  const resolvedRoot = root ?? join(homedir(), ".openclaw", "tickets")
+export function resolveStorePaths(root = Bun.env["TICKET_FLOW_HOME"]): TicketStorePaths {
+  const resolvedRoot = root ?? join(homedir(), ".ticket-flow", "tickets")
   return {
     root: resolvedRoot,
     active: join(resolvedRoot, "active"),

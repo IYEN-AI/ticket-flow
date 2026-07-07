@@ -11,8 +11,8 @@ bun run lint
 Latest result:
 
 - TypeScript: passed
-- Tests: 18 passed, 0 failed
-- Biome: passed over 25 files
+- Tests: 19 passed, 0 failed
+- Biome: passed over 43 files
 
 ## Manual CLI QA
 
@@ -86,7 +86,7 @@ Observed JSON:
 Historical data sweep:
 
 ```bash
-bun --eval '...TicketSchema.safeParse over /Users/iyen/.openclaw/tickets/{active,archive}/**/*.json...'
+bun --eval '...TicketSchema.safeParse over /Users/iyen/.ticket-flow/tickets/{active,archive}/**/*.json...'
 ```
 
 Observed:
@@ -98,7 +98,7 @@ Observed:
 Default-store read-only list:
 
 ```bash
-TICKET_FLOW_HOME=/Users/iyen/.openclaw/tickets bun run src/cli.ts list | head -20
+TICKET_FLOW_HOME=/Users/iyen/.ticket-flow/tickets bun run src/cli.ts list | head -20
 ```
 
 Observed: command exited 0 and printed active tickets from the real store.
@@ -113,9 +113,9 @@ Observed: command exited 1 with `checkpoint requires at least one field`, matchi
 
 Store override compatibility:
 
-- `TICKET_FLOW_HOME` is the preferred store override.
-- `OPENCLAW_TICKET_HOME` remains supported as a legacy compatibility alias.
-- When both are set, `TICKET_FLOW_HOME` wins.
+- `TICKET_FLOW_HOME` is the only store override.
+- Old product-specific store override env vars are ignored.
+- With no override, the default store is `~/.ticket-flow/tickets`.
 
 ## Manual Clawhip QA
 
