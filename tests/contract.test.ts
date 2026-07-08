@@ -1,9 +1,10 @@
 import { afterEach, beforeEach, describe, expect, test } from "bun:test"
-import { mkdir, mkdtemp, readFile, rm, stat, writeFile } from "node:fs/promises"
+import { mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises"
 import { tmpdir } from "node:os"
 import { join } from "node:path"
-import { getTicket, importTicketStore, listTickets, updateStatus } from "../src/store"
+import { getTicket, listTickets, updateStatus } from "../src/store"
 import { resolveStorePaths } from "../src/store/paths"
+import { exists } from "./support/store-fixtures"
 
 describe("historical ticket contract", () => {
   let storeRoot = ""
@@ -147,137 +148,4 @@ describe("historical ticket contract", () => {
     expect(paths.root).toEndWith("/.ticket-flow/tickets")
     expect(paths.active).toEndWith("/.ticket-flow/tickets/active")
   })
-
-  test("Given source active and archived tickets When importing Then active tickets are indexed and completed tickets are archived", async () => {
-    const sourceRoot = await mkdtemp(join(tmpdir(), "ticket-flow-import-source-"))
-    await mkdir(join(sourceRoot, "active"), { recursive: true })
-    await mkdir(join(sourceRoot, "archive", "2026-06"), { recursive: true })
-    try {
-      await writeTicketFixture(join(sourceRoot, "active", "T-20260630-001.json"), {
-        id: "T-20260630-001",
-        title: "import active",
-        status: "open",
-        updated: "2026-06-30T10:00:00Z",
-      })
-      await writeTicketFixture(join(sourceRoot, "active", "T-20260630-002.json"), {
-        id: "T-20260630-002",
-        title: "import done from active",
-        status: "done",
-        updated: "2026-06-30T11:00:00Z",
-        closed: "2026-07-01T00:00:00Z",
-      })
-      await writeTicketFixture(join(sourceRoot, "archive", "2026-06", "T-20260629-001.json"), {
-        id: "T-20260629-001",
-        title: "import archived",
-        status: "done",
-        updated: "2026-06-29T09:00:00Z",
-        closed: null,
-      })
-
-      const summary = await importTicketStore(sourceRoot, {
-        root: storeRoot,
-        active: join(storeRoot, "active"),
-        archive: join(storeRoot, "archive"),
-        index: join(storeRoot, "index.json"),
-      })
-
-      const active = await listTickets({
-        root: storeRoot,
-        active: join(storeRoot, "active"),
-        archive: join(storeRoot, "archive"),
-        index: join(storeRoot, "index.json"),
-      })
-      const index = JSON.parse(await readFile(join(storeRoot, "index.json"), "utf8"))
-      expect(summary).toEqual({ imported: 3, active: 1, archived: 2 })
-      expect(active.map((ticket) => ticket.id)).toEqual(["T-20260630-001"])
-      expect(index.tickets["T-20260630-001"]).toMatchObject({ title: "import active" })
-      expect(index.tickets["T-20260630-002"]).toBeUndefined()
-      expect(await exists(join(storeRoot, "archive", "2026-07", "T-20260630-002.json"))).toBe(true)
-      expect(await exists(join(storeRoot, "archive", "2026-06", "T-20260629-001.json"))).toBe(true)
-    } finally {
-      await rm(sourceRoot, { recursive: true, force: true })
-    }
-  })
-
-  test("Given a destination ticket with the same ID When importing Then it fails without overwriting", async () => {
-    const sourceRoot = await mkdtemp(join(tmpdir(), "ticket-flow-import-source-"))
-    await mkdir(join(sourceRoot, "active"), { recursive: true })
-    try {
-      await writeTicketFixture(join(storeRoot, "active", "T-20260630-003.json"), {
-        id: "T-20260630-003",
-        title: "existing destination",
-        status: "open",
-        updated: "2026-06-30T10:00:00Z",
-      })
-      await writeTicketFixture(join(sourceRoot, "active", "T-20260630-003.json"), {
-        id: "T-20260630-003",
-        title: "source duplicate",
-        status: "open",
-        updated: "2026-06-30T11:00:00Z",
-      })
-
-      await expect(
-        importTicketStore(sourceRoot, {
-          root: storeRoot,
-          active: join(storeRoot, "active"),
-          archive: join(storeRoot, "archive"),
-          index: join(storeRoot, "index.json"),
-        }),
-      ).rejects.toThrow("duplicate destination ticket T-20260630-003")
-
-      const destination = JSON.parse(
-        await readFile(join(storeRoot, "active", "T-20260630-003.json"), "utf8"),
-      )
-      expect(destination.title).toBe("existing destination")
-    } finally {
-      await rm(sourceRoot, { recursive: true, force: true })
-    }
-  })
 })
-
-async function exists(path: string): Promise<boolean> {
-  try {
-    await stat(path)
-    return true
-  } catch (error) {
-    if (error instanceof Error && "code" in error && error.code === "ENOENT") {
-      return false
-    }
-    throw error
-  }
-}
-
-async function writeTicketFixture(
-  path: string,
-  overrides: {
-    readonly id: string
-    readonly title: string
-    readonly status: "open" | "doing" | "review" | "blocked" | "done"
-    readonly updated: string
-    readonly closed?: string | null
-  },
-): Promise<void> {
-  await writeFile(
-    path,
-    `${JSON.stringify({
-      id: overrides.id,
-      title: overrides.title,
-      status: overrides.status,
-      priority: "medium",
-      type: "chore",
-      source: null,
-      goal: "",
-      acceptance: [],
-      tags: [],
-      artifacts: [],
-      links: { github_issues: [], prs: [], threads: [], cron_jobs: [] },
-      parent: null,
-      children: [],
-      assignee: "iyen",
-      created: "2026-06-01T00:00:00Z",
-      updated: overrides.updated,
-      closed: overrides.closed ?? null,
-      log: [],
-    })}\n`,
-  )
-}
