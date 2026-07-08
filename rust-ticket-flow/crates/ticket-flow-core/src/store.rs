@@ -1,20 +1,20 @@
 use std::path::PathBuf;
 
-use serde_json::json;
-
 use crate::clawhip::{ClawhipEventKind, EnvClawhipEmit, emit_ticket_event_from_env};
 use crate::error::{Result, TicketFlowError};
-use crate::event::{EventEnvelope, TICKET_CREATED, TICKET_STATUS_CHANGED};
-use crate::model::{Artifact, CreateTicket, Ticket, TicketId, TicketStatus};
-use crate::time::{now_rfc3339, today_yyyymmdd};
+use crate::event::{EventEnvelope, TICKET_CREATED};
+use crate::model::{CreateTicket, Ticket, TicketId};
+use crate::time::today_yyyymmdd;
 
 mod checkpoint;
 mod import;
 mod io;
 mod mutations;
+mod status;
 
 pub use import::ImportTicketStoreSummary;
 pub use mutations::{AddLogInput, LinkKind, LinkTicketInput};
+pub use status::StatusPatch;
 
 #[derive(Debug, Clone)]
 pub struct StorePaths {
@@ -64,10 +64,13 @@ impl TicketStore {
     pub fn create_ticket(&self, input: CreateTicket) -> Result<Ticket> {
         self.ensure_store()?;
         let id = self.next_ticket_id(&today_yyyymmdd())?;
-        let now = now_rfc3339();
+        let now = crate::time::now_rfc3339();
         let ticket = Ticket::new(id.clone(), input, now);
-        let event =
-            EventEnvelope::new(id.clone(), TICKET_CREATED, json!({ "title": ticket.title }));
+        let event = EventEnvelope::new(
+            id.clone(),
+            TICKET_CREATED,
+            serde_json::json!({ "title": ticket.title }),
+        );
         self.append_event(&event)?;
         self.write_ticket_active(&ticket)?;
         let mut index = self.read_index()?;
@@ -103,47 +106,4 @@ impl TicketStore {
         }
         Ok(tickets)
     }
-
-    pub fn update_status(&self, id: &TicketId, patch: StatusPatch) -> Result<Ticket> {
-        let mut ticket = self.load_active(id)?;
-        if patch.status == TicketStatus::Review && patch.artifact.is_none() {
-            return Err(TicketFlowError::ReviewArtifactRequired);
-        }
-        let from = ticket.status;
-        ticket.status = patch.status;
-        ticket.updated = now_rfc3339();
-        if patch.status == TicketStatus::Done {
-            ticket.closed = Some(ticket.updated.clone());
-        }
-        if let Some(value) = patch.artifact {
-            ticket
-                .artifacts
-                .push(Artifact::new("artifact", value, ticket.updated.clone()));
-        }
-        let event = EventEnvelope::new(
-            id.clone(),
-            TICKET_STATUS_CHANGED,
-            json!({ "from": from, "to": patch.status, "note": patch.note }),
-        );
-        if patch.status == TicketStatus::Done {
-            self.archive_ticket(&ticket, event)?;
-        } else {
-            self.commit_active(&ticket, event)?;
-        }
-        emit_ticket_event_from_env(EnvClawhipEmit {
-            kind: ClawhipEventKind::StatusChanged,
-            ticket: &ticket,
-            from_status: Some(from),
-            to_status: Some(patch.status),
-        });
-        Ok(ticket)
-    }
-}
-
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct StatusPatch {
-    pub status: TicketStatus,
-    pub artifact: Option<String>,
-    pub evidence: Option<String>,
-    pub note: Option<String>,
 }

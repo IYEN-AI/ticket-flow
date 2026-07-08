@@ -7,6 +7,8 @@ pub enum TicketFlowError {
     ApprovalOutcomeNotAllowed,
     #[error("blocked gate failed: needed_from or next_owner required")]
     BlockedGateFailed,
+    #[error("clawhip returned HTTP {0}")]
+    ClawhipHttpStatus(u16),
     #[error("duplicate destination ticket {0}")]
     DuplicateDestinationTicket(String),
     #[error("duplicate source ticket {0}")]

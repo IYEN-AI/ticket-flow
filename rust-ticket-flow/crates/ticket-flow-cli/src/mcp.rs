@@ -3,6 +3,7 @@ use std::io::{self, BufRead, Write};
 use anyhow::Result;
 use serde_json::{Value, json};
 
+mod schema;
 mod tools;
 
 pub(crate) fn run_stdio() -> Result<()> {

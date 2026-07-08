@@ -199,11 +199,20 @@ pub fn send_clawhip_event(input: SendClawhipEventInput) -> Result<ClawhipSendRes
         .json(&input.event)
         .send();
     match response {
-        Ok(value) => Ok(ClawhipSendResult {
+        Ok(value) if value.status().is_success() => Ok(ClawhipSendResult {
             ok: true,
             status: Some(value.status().as_u16()),
             error: None,
         }),
+        Ok(value) if input.mode == ClawhipSendMode::BestEffort => {
+            let status = value.status();
+            Ok(ClawhipSendResult {
+                ok: false,
+                status: Some(status.as_u16()),
+                error: Some(format!("clawhip returned HTTP {status}")),
+            })
+        }
+        Ok(value) => Err(TicketFlowError::ClawhipHttpStatus(value.status().as_u16())),
         Err(error) if input.mode == ClawhipSendMode::BestEffort => Ok(ClawhipSendResult {
             ok: false,
             status: None,

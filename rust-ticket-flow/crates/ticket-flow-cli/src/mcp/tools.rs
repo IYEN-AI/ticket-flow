@@ -7,19 +7,7 @@ use ticket_flow_core::{
     TicketStatus, TicketStore, agent_queue,
 };
 
-pub(crate) fn tool_definitions() -> Value {
-    json!([
-        {"name":"ticket_create","description":"Create an agent ticket.","inputSchema":{"type":"object"}},
-        {"name":"ticket_list","description":"List active agent tickets.","inputSchema":{"type":"object"}},
-        {"name":"ticket_get","description":"Read an active or archived ticket.","inputSchema":{"type":"object"}},
-        {"name":"ticket_import","description":"Import a source ticket store into ticket-flow.","inputSchema":{"type":"object"}},
-        {"name":"ticket_update_status","description":"Apply a ticket status transition.","inputSchema":{"type":"object"}},
-        {"name":"ticket_link","description":"Attach an external reference to a ticket.","inputSchema":{"type":"object"}},
-        {"name":"ticket_add_log","description":"Append a note log entry to a ticket.","inputSchema":{"type":"object"}},
-        {"name":"ticket_checkpoint","description":"Write the current checkpoint payload.","inputSchema":{"type":"object"}},
-        {"name":"ticket_agent_actions","description":"List tickets with agent_action next actions.","inputSchema":{"type":"object"}}
-    ])
-}
+pub(crate) use super::schema::tool_definitions;
 
 pub(crate) fn call(params: &Value) -> Result<Value> {
     let call = serde_json::from_value::<ToolCallParams>(params.clone())?;
