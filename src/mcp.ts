@@ -13,9 +13,11 @@ import {
   checkpointTicket,
   createTicket,
   getTicket,
+  importTicketStore,
   linkTicket,
   listAgentActions,
   listTickets,
+  resolveStorePaths,
   updateStatus,
 } from "./store"
 
@@ -69,6 +71,21 @@ server.registerTool(
     const ticket = await getTicket(id)
     return {
       content: [{ type: "text", text: JSON.stringify(ticket, null, 2) }],
+    }
+  },
+)
+
+server.registerTool(
+  "ticket_import",
+  {
+    description:
+      "Import a legacy/source ticket store into the configured ticket-flow store without sharing source files in place.",
+    inputSchema: { sourceRoot: z.string().min(1) },
+  },
+  async ({ sourceRoot }) => {
+    const summary = await importTicketStore(sourceRoot, resolveStorePaths())
+    return {
+      content: [{ type: "text", text: JSON.stringify(summary, null, 2) }],
     }
   },
 )

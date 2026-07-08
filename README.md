@@ -7,7 +7,9 @@ Agent ticket system for coding agents. `ticket-flow` owns ticket lifecycle state
 
 The source-of-truth boundary is the `ticket-flow` CLI, MCP server, and TypeScript
 store API. All ticket creation, mutation, status changes, logs, links, and
-checkpoints should go through those surfaces.
+checkpoints should go through those surfaces. Migration/import is also a
+ticket-flow mutation and should use `ticket-flow import`, `ticket_import`, or
+`importTicketStore`.
 
 The filesystem is the current storage implementation, not the public SSOT
 contract:
@@ -20,7 +22,8 @@ contract:
 
 Existing external ticket data should be migrated into the `ticket-flow` store
 before use. Do not share another product's ticket directory in place as the live
-ticket state.
+ticket state. Import copies parsed ticket records into the configured
+`ticket-flow` store and leaves the source directory as a source artifact only.
 
 ## Usage
 
@@ -29,13 +32,14 @@ bun install
 bun run cli create --title "Fix compaction session recovery" --source discord:123
 bun run cli list
 bun run cli show T-20260707-001
+bun run cli import /path/to/legacy-ticket-store
 bun run cli checkpoint T-20260707-001 --phase qa --next-type agent_action --next-command "finish verification"
 bun run mcp
 ```
 
 The MCP server exposes the same ticket mutations as tools, including
-`ticket_create`, `ticket_update_status`, `ticket_checkpoint`, and
-`ticket_agent_actions`.
+`ticket_create`, `ticket_import`, `ticket_update_status`, `ticket_checkpoint`,
+and `ticket_agent_actions`.
 
 ## macmini Setup
 

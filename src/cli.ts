@@ -21,9 +21,11 @@ import {
   checkpointTicket,
   createTicket,
   getTicket,
+  importTicketStore,
   linkTicket,
   listAgentActions,
   listTickets,
+  resolveStorePaths,
   updateStatus,
 } from "./store"
 
@@ -105,6 +107,19 @@ program
     await runBoundary(async () => {
       const ticket = await getTicket(id)
       console.log(JSON.stringify(ticket, null, 2))
+    })
+  })
+
+program
+  .command("import")
+  .description("Import a legacy/source ticket store into the configured ticket-flow store.")
+  .argument("<sourceRoot>")
+  .action(async (sourceRoot: string) => {
+    await runBoundary(async () => {
+      const summary = await importTicketStore(sourceRoot, resolveStorePaths())
+      console.log(
+        `imported ${summary.imported} ticket(s): active=${summary.active} archived=${summary.archived}`,
+      )
     })
   })
 

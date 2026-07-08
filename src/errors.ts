@@ -32,3 +32,19 @@ export class InvalidSourceError extends Error {
     super(`invalid source ${source}`)
   }
 }
+
+export class DuplicateDestinationTicketError extends Error {
+  readonly name = "DuplicateDestinationTicketError"
+
+  constructor(readonly ticketId: string) {
+    super(`duplicate destination ticket ${ticketId}`)
+  }
+}
+
+export class DuplicateSourceTicketError extends Error {
+  readonly name = "DuplicateSourceTicketError"
+
+  constructor(readonly ticketId: string) {
+    super(`duplicate source ticket ${ticketId}`)
+  }
+}
