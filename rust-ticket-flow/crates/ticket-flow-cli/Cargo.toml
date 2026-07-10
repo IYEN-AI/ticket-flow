@@ -1,0 +1,30 @@
+[package]
+name = "ticket-flow-cli"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+rust-version.workspace = true
+
+[[bin]]
+name = "ticket-flow"
+path = "src/main.rs"
+
+[[bin]]
+name = "ticket-flow-mcp"
+path = "src/mcp_main.rs"
+
+[dependencies]
+anyhow.workspace = true
+clap.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+ticket-flow-core = { path = "../ticket-flow-core" }
+
+[dev-dependencies]
+assert_cmd.workspace = true
+predicates.workspace = true
+serde_json.workspace = true
+tempfile.workspace = true
+
+[lints]
+workspace = true

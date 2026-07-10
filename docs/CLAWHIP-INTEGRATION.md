@@ -2,14 +2,17 @@
 
 `ticket-flow` can emit compact `ticket.*` events to a running
 [`clawhip`](https://github.com/Yeachan-Heo/clawhip) daemon. The integration keeps
-the local ticket JSON store as the source of truth and uses `clawhip` only as
-the event routing layer.
+the `ticket-flow` CLI/MCP/store API boundary as the source of truth and uses
+`clawhip` only as the event routing layer. The local filesystem is the current
+storage implementation behind ticket-flow, not a shared state contract for
+clawhip or other tools.
 
 ## Responsibilities
 
 `ticket-flow` owns:
 
-- ticket creation, status changes, checkpoints, and the active/archive JSON store
+- ticket creation, import/migration, status changes, checkpoints, and the
+  active/archive storage implementation
 - projection from a ticket record into a compact event payload
 - best-effort delivery to the configured `clawhip` daemon
 
@@ -22,6 +25,8 @@ the event routing layer.
 
 The integration intentionally does not persist `clawhip` delivery state in ticket
 JSON, and it does not send raw logs, artifacts, goals, or acceptance criteria.
+`clawhip` must consume `ticket.*` events; it must not create, import, or mutate
+ticket state directly.
 
 ## Event Sources
 

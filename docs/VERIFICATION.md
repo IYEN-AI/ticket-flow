@@ -26,6 +26,7 @@ Commands exercised:
 
 ```bash
 TICKET_FLOW_HOME=/tmp/ticket-flow-qa bun run src/cli.ts create --title 'QA ticket' --type feature --priority high --goal 'prove CLI surface' --acceptance 'ticket json exists' --tag qa,mcp --source discord:999
+TICKET_FLOW_HOME=/tmp/ticket-flow-import-dest bun run src/cli.ts import /tmp/ticket-flow-import-source
 TICKET_FLOW_HOME=/tmp/ticket-flow-qa bun run src/cli.ts status T-20260701-001 doing --note 'start QA'
 TICKET_FLOW_HOME=/tmp/ticket-flow-qa bun run src/cli.ts link T-20260701-001 --thread 123456
 TICKET_FLOW_HOME=/tmp/ticket-flow-qa bun run src/cli.ts log T-20260701-001 'manual QA note'
@@ -36,6 +37,7 @@ TICKET_FLOW_HOME=/tmp/ticket-flow-qa bun run src/cli.ts agent-actions
 Observed output included:
 
 ```text
+imported 3 ticket(s): active=1 archived=2
 T-20260701-001: open -> doing
 T-20260701-001: linked threads -> 123456
 T-20260701-001: logged
@@ -53,14 +55,17 @@ printf '%s\n' \
   '{"jsonrpc":"2.0","method":"notifications/initialized"}' \
   '{"jsonrpc":"2.0","id":2,"method":"tools/list"}' \
   '{"jsonrpc":"2.0","id":3,"method":"tools/call","params":{"name":"ticket_create","arguments":{"title":"MCP QA ticket","priority":"low","type":"chore","source":"qa:mcp"}}}' \
+  '{"jsonrpc":"2.0","id":4,"method":"tools/call","params":{"name":"ticket_import","arguments":{"sourceRoot":"/tmp/ticket-flow-import-source"}}}' \
   | TICKET_FLOW_HOME=/tmp/ticket-flow-mcp-qa bun run src/mcp.ts
 ```
 
 Observed:
 
 - `initialize` returned protocol version `2025-06-18`.
-- `tools/list` returned all eight ticket tools.
+- `tools/list` returned `ticket_import` with the other ticket tools.
 - `ticket_create` returned `T-20260701-001` with existing JSON contract fields.
+- `ticket_import` returned an import summary and wrote parsed source tickets into
+  the configured destination store.
 - `ticket_agent_actions` returned an empty JSON array on an empty active-action store.
 - stdout contained JSON-RPC messages only.
 

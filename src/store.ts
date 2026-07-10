@@ -1,4 +1,6 @@
 export { createTicket } from "./store/create"
+export type { ImportTicketStoreSummary } from "./store/import"
+export { importTicketStore } from "./store/import"
 export { addLog, checkpointTicket, linkTicket } from "./store/mutations"
 export type { TicketStorePaths } from "./store/paths"
 export { ensureStore, resolveStorePaths } from "./store/paths"

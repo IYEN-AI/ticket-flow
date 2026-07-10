@@ -1,9 +1,10 @@
 import { afterEach, beforeEach, describe, expect, test } from "bun:test"
-import { mkdir, mkdtemp, readFile, rm, stat, writeFile } from "node:fs/promises"
+import { mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises"
 import { tmpdir } from "node:os"
 import { join } from "node:path"
 import { getTicket, listTickets, updateStatus } from "../src/store"
 import { resolveStorePaths } from "../src/store/paths"
+import { exists } from "./support/store-fixtures"
 
 describe("historical ticket contract", () => {
   let storeRoot = ""
@@ -148,15 +149,3 @@ describe("historical ticket contract", () => {
     expect(paths.active).toEndWith("/.ticket-flow/tickets/active")
   })
 })
-
-async function exists(path: string): Promise<boolean> {
-  try {
-    await stat(path)
-    return true
-  } catch (error) {
-    if (error instanceof Error && "code" in error && error.code === "ENOENT") {
-      return false
-    }
-    throw error
-  }
-}
