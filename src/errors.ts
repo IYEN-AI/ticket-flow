@@ -48,3 +48,14 @@ export class DuplicateSourceTicketError extends Error {
     super(`duplicate source ticket ${ticketId}`)
   }
 }
+
+export class InvalidImportSourceError extends Error {
+  readonly name = "InvalidImportSourceError"
+
+  constructor(
+    readonly sourceRoot: string,
+    options?: ErrorOptions,
+  ) {
+    super(`invalid import source ${sourceRoot}`, options)
+  }
+}

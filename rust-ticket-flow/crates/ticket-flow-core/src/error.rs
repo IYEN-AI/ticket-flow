@@ -23,6 +23,8 @@ pub enum TicketFlowError {
     IdSequenceExhausted(String),
     #[error("invalid source {0}")]
     InvalidSource(String),
+    #[error("invalid import source {0}")]
+    InvalidImportSource(String),
     #[error("invalid status {0}")]
     InvalidStatus(String),
     #[error("invalid link kind {0}")]

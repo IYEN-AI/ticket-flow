@@ -1,7 +1,8 @@
 import { afterEach, beforeEach, describe, expect, test } from "bun:test"
-import { mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises"
+import { chmod, mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises"
 import { tmpdir } from "node:os"
 import { join } from "node:path"
+import { InvalidImportSourceError } from "../src/errors"
 import { importTicketStore, listTickets } from "../src/store"
 import { exists, writeTicketFixture } from "./support/store-fixtures"
 
@@ -101,6 +102,73 @@ describe("ticket import contract", () => {
       )
       expect(destination.title).toBe("existing destination")
     } finally {
+      await rm(sourceRoot, { recursive: true, force: true })
+    }
+  })
+
+  test("Given a missing source root When importing Then it rejects the invalid source", async () => {
+    const sourceRoot = join(storeRoot, "missing-import-source")
+
+    const imported = importTicketStore(sourceRoot, {
+      root: storeRoot,
+      active: join(storeRoot, "active"),
+      archive: join(storeRoot, "archive"),
+      index: join(storeRoot, "index.json"),
+    })
+
+    await expect(imported).rejects.toBeInstanceOf(InvalidImportSourceError)
+    await expect(imported).rejects.toThrow(`invalid import source ${sourceRoot}`)
+  })
+
+  test("Given a file source root When importing Then it rejects the invalid source", async () => {
+    const sourceRoot = join(storeRoot, "import-source.json")
+    await writeFile(sourceRoot, "{}")
+
+    const imported = importTicketStore(sourceRoot, {
+      root: storeRoot,
+      active: join(storeRoot, "active"),
+      archive: join(storeRoot, "archive"),
+      index: join(storeRoot, "index.json"),
+    })
+
+    await expect(imported).rejects.toBeInstanceOf(InvalidImportSourceError)
+    await expect(imported).rejects.toThrow(`invalid import source ${sourceRoot}`)
+  })
+
+  test("Given a source below a file When importing Then it rejects the invalid source", async () => {
+    const sourceParent = join(storeRoot, "import-source-file")
+    const sourceRoot = join(sourceParent, "nested")
+    await writeFile(sourceParent, "not a directory")
+
+    const imported = importTicketStore(sourceRoot, {
+      root: storeRoot,
+      active: join(storeRoot, "active"),
+      archive: join(storeRoot, "archive"),
+      index: join(storeRoot, "index.json"),
+    })
+
+    await expect(imported).rejects.toBeInstanceOf(InvalidImportSourceError)
+    await expect(imported).rejects.toThrow(`invalid import source ${sourceRoot}`)
+  })
+
+  test("Given an unreadable source When importing Then it rejects before creating the destination", async () => {
+    const sourceRoot = await mkdtemp(join(tmpdir(), "ticket-flow-unreadable-source-"))
+    const activeRoot = join(sourceRoot, "active")
+    const destinationRoot = join(storeRoot, "uninitialized-destination")
+    await mkdir(activeRoot)
+    await chmod(activeRoot, 0)
+    try {
+      const imported = importTicketStore(sourceRoot, {
+        root: destinationRoot,
+        active: join(destinationRoot, "active"),
+        archive: join(destinationRoot, "archive"),
+        index: join(destinationRoot, "index.json"),
+      })
+
+      await expect(imported).rejects.toBeInstanceOf(InvalidImportSourceError)
+      expect(await exists(destinationRoot)).toBe(false)
+    } finally {
+      await chmod(activeRoot, 0o700)
       await rm(sourceRoot, { recursive: true, force: true })
     }
   })

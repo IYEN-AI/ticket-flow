@@ -25,10 +25,20 @@ struct SourceTicket {
 
 impl TicketStore {
     pub fn import_store(&self, source_root: impl AsRef<Path>) -> Result<ImportTicketStoreSummary> {
-        self.ensure_store()?;
         let source_root = source_root.as_ref();
-        let source_tickets = read_source_tickets(source_root)?;
+        if !source_root.is_dir() {
+            return Err(invalid_import_source(source_root));
+        }
+        if fs::read_dir(source_root).is_err() {
+            return Err(invalid_import_source(source_root));
+        }
+        let source_tickets = match read_source_tickets(source_root) {
+            Ok(tickets) => tickets,
+            Err(TicketFlowError::Io(_)) => return Err(invalid_import_source(source_root)),
+            Err(error) => return Err(error),
+        };
         reject_duplicate_sources(&source_tickets)?;
+        self.ensure_store()?;
         self.reject_destination_collisions(&source_tickets)?;
 
         let mut summary = ImportTicketStoreSummary {
@@ -71,6 +81,10 @@ impl TicketStore {
         }
         Ok(())
     }
+}
+
+fn invalid_import_source(source_root: &Path) -> TicketFlowError {
+    TicketFlowError::InvalidImportSource(source_root.display().to_string())
 }
 
 fn read_source_tickets(source_root: &Path) -> Result<Vec<SourceTicket>> {

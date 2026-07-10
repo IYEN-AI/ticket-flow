@@ -1,9 +1,11 @@
 use std::fs;
+#[cfg(unix)]
+use std::os::unix::fs::PermissionsExt;
 use std::path::Path;
 
 use serde_json::{Value, json};
 use tempfile::tempdir;
-use ticket_flow_core::{StorePaths, TicketId, TicketIndex, TicketStore};
+use ticket_flow_core::{StorePaths, TicketFlowError, TicketId, TicketIndex, TicketStore};
 
 #[test]
 fn import_store_copies_active_archived_index_events_and_leaves_source()
@@ -164,6 +166,72 @@ fn import_store_rejects_destination_collision_without_overwrite()
             .join("T-20260630-004.json"),
     )?;
     assert_eq!(unchanged["title"], existing["title"]);
+    Ok(())
+}
+
+#[test]
+fn import_store_rejects_missing_source_root() -> Result<(), Box<dyn std::error::Error>> {
+    // Given: a source path that does not exist.
+    let source_parent = tempdir()?;
+    let destination = tempdir()?;
+    let source = source_parent.path().join("missing-import-source");
+    let store = TicketStore::new(StorePaths::new(destination.path().to_path_buf()));
+
+    // When: the missing source store is imported.
+    let result = store.import_store(&source);
+
+    // Then: the source path is rejected instead of reporting an empty successful import.
+    let Err(TicketFlowError::InvalidImportSource(invalid_source)) = result else {
+        return Err("expected invalid import source".into());
+    };
+    assert_eq!(invalid_source, source.display().to_string());
+    Ok(())
+}
+
+#[test]
+fn import_store_rejects_source_below_file() -> Result<(), Box<dyn std::error::Error>> {
+    // Given: a source path whose parent is a file.
+    let source_parent = tempdir()?;
+    let destination = tempdir()?;
+    let parent_file = source_parent.path().join("import-source-file");
+    fs::write(&parent_file, b"not a directory")?;
+    let source = parent_file.join("nested");
+    let store = TicketStore::new(StorePaths::new(destination.path().to_path_buf()));
+
+    // When: the invalid source store is imported.
+    let result = store.import_store(&source);
+
+    // Then: the typed invalid-import-source variant is returned.
+    let Err(TicketFlowError::InvalidImportSource(invalid_source)) = result else {
+        return Err("expected invalid import source".into());
+    };
+    assert_eq!(invalid_source, source.display().to_string());
+    Ok(())
+}
+
+#[cfg(unix)]
+#[test]
+fn import_store_rejects_unreadable_source_before_creating_destination()
+-> Result<(), Box<dyn std::error::Error>> {
+    // Given: a source store whose active directory cannot be read.
+    let source = tempdir()?;
+    let destination_parent = tempdir()?;
+    let destination = destination_parent.path().join("uninitialized-destination");
+    let active = source.path().join("active");
+    fs::create_dir(&active)?;
+    fs::set_permissions(&active, fs::Permissions::from_mode(0o000))?;
+    let store = TicketStore::new(StorePaths::new(destination.clone()));
+
+    // When: the unreadable source store is imported.
+    let result = store.import_store(source.path());
+    fs::set_permissions(&active, fs::Permissions::from_mode(0o700))?;
+
+    // Then: the typed error is returned before the destination is created.
+    let Err(TicketFlowError::InvalidImportSource(invalid_source)) = result else {
+        return Err("expected invalid import source".into());
+    };
+    assert_eq!(invalid_source, source.path().display().to_string());
+    assert!(!destination.exists());
     Ok(())
 }
 

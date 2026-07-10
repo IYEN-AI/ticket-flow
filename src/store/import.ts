@@ -1,6 +1,10 @@
-import { mkdir, readdir } from "node:fs/promises"
+import { mkdir, readdir, stat } from "node:fs/promises"
 import { dirname, join } from "node:path"
-import { DuplicateDestinationTicketError, DuplicateSourceTicketError } from "../errors"
+import {
+  DuplicateDestinationTicketError,
+  DuplicateSourceTicketError,
+  InvalidImportSourceError,
+} from "../errors"
 import type { Ticket } from "../schema"
 import {
   idsInDirectory,
@@ -28,9 +32,9 @@ export async function importTicketStore(
   sourceRoot: string,
   destination: TicketStorePaths,
 ): Promise<ImportTicketStoreSummary> {
-  await ensureStore(destination)
-  const sourceTickets = await readSourceTickets(sourceRoot)
+  const sourceTickets = await readImportSourceTickets(sourceRoot)
   rejectDuplicateSources(sourceTickets)
+  await ensureStore(destination)
   await rejectDestinationCollisions(destination, sourceTickets)
 
   let active = 0
@@ -47,6 +51,24 @@ export async function importTicketStore(
     }
   }
   return { imported: sourceTickets.length, active, archived }
+}
+
+async function readImportSourceTickets(sourceRoot: string): Promise<readonly SourceTicket[]> {
+  try {
+    const sourceMetadata = await stat(sourceRoot)
+    if (!sourceMetadata.isDirectory()) {
+      throw new InvalidImportSourceError(sourceRoot)
+    }
+    return await readSourceTickets(sourceRoot)
+  } catch (error) {
+    if (error instanceof InvalidImportSourceError) {
+      throw error
+    }
+    if (error instanceof Error && "code" in error) {
+      throw new InvalidImportSourceError(sourceRoot, { cause: error })
+    }
+    throw error
+  }
 }
 
 async function readSourceTickets(sourceRoot: string): Promise<readonly SourceTicket[]> {
